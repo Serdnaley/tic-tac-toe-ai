@@ -2,25 +2,35 @@ package predictor
 
 import (
 	"fmt"
-	"os"
-	"path/filepath"
-	"runtime"
+	"sync"
+	"sync/atomic"
 	"tictactoe/game"
+	"time"
 )
 
 type Predictor struct {
-	winMap map[string]map[string]game.Player
+	ResultStorage
+
+	Count     *uint64
+	CountWon  *uint64
+	CountLose *uint64
+	CountDraw *uint64
 }
 
 func NewPredictor() *Predictor {
-	pm := &Predictor{}
-	pm.winMap = make(map[string]map[string]game.Player)
-	return pm
+	p := &Predictor{}
+
+	p.Count = new(uint64)
+	p.CountWon = new(uint64)
+	p.CountLose = new(uint64)
+	p.CountDraw = new(uint64)
+
+	return p
 }
 
-func (pm *Predictor) play(g *game.Game) {
+func (pm *Predictor) play(g *game.Game, st *ResultStorage, wg *sync.WaitGroup) {
 	if g.PlayerWon != game.PlayerNone || len(g.BoardHistory) == g.BoardWidth*g.BoardHeight {
-		pm.putGameResult(g)
+		pm.putGameResult(g, st)
 		return
 	}
 
@@ -37,74 +47,79 @@ func (pm *Predictor) play(g *game.Game) {
 				newGame.CheckWin()
 			}
 
-			pm.play(newGame)
+			wg.Add(1)
+			go func() {
+				pm.play(newGame, st, wg)
+				wg.Done()
+			}()
 		}
 	}
 }
 
-func (pm *Predictor) putGameResult(g *game.Game) {
-	boardKey := fmt.Sprintf("%d-%d-%d", g.BoardWidth, g.BoardHeight, g.WinLength)
-
-	historyKey := fmt.Sprintf("p{%s};", g.BoardHistory[0].Player.String())
-	for _, step := range g.BoardHistory {
-		historyKey += fmt.Sprintf("m{%d,%d};", step.X, step.Y)
+func (pm *Predictor) putGameResult(g *game.Game, st *ResultStorage) {
+	atomic.AddUint64(pm.Count, 1)
+	switch g.PlayerWon {
+	case game.PlayerX:
+		atomic.AddUint64(pm.CountWon, 1)
+	case game.PlayerO:
+		atomic.AddUint64(pm.CountLose, 1)
+	case game.PlayerNone:
+		atomic.AddUint64(pm.CountDraw, 1)
 	}
 
-	if pm.winMap[boardKey] == nil {
-		pm.winMap[boardKey] = make(map[string]game.Player)
-	}
-	pm.winMap[boardKey][historyKey] = g.PlayerWon
+	st.Write(g)
 }
 
 func (pm *Predictor) BuildWinMap(w, h, l int) error {
+	st, err := NewResultStorage(w, h, l)
+	if err != nil {
+		return err
+	}
+
+	if err := st.Create(); err != nil {
+		return err
+	}
+
 	g, err := game.NewGame(w, h, l)
 	if err != nil {
 		return err
 	}
 
-	pm.play(g)
-	if err = pm.saveWinMap(w, h, l); err != nil {
-		return err
-	}
+	wg := &sync.WaitGroup{}
 
-	return nil
-}
+	wg.Add(1)
+	go func() {
+		pm.play(g, st, wg)
+		wg.Done()
+	}()
 
-func (pm *Predictor) saveWinMap(w, h, l int) error {
-	_, currentFilePath, _, ok := runtime.Caller(0)
-	if !ok {
-		return fmt.Errorf("failed to get current file path")
-	}
-
-	key := fmt.Sprintf("%d-%d-%d", w, h, l)
-	name := fmt.Sprintf("%s.txt", key)
-	dir := filepath.Join(filepath.Dir(currentFilePath), "maps")
-	path := filepath.Join(dir, name)
-
-	if _, err := os.Stat(dir); os.IsNotExist(err) {
-		if err := os.MkdirAll(dir, os.ModePerm); err != nil {
-			return fmt.Errorf("failed to create directory: %v", err)
-		}
-	}
-
-	file, err := os.Create(path)
-	if err != nil {
-		return fmt.Errorf("failed to create file: %v", err)
-	}
-	defer func() {
-		if err := file.Close(); err != nil {
-			fmt.Println("failed to close file:", err)
+	go func() {
+		i := 0
+		for {
+			i++
+			fmt.Println()
+			fmt.Println("loop:", i)
+			fmt.Println("games played:", atomic.LoadUint64(pm.Count))
+			fmt.Println("games won:", atomic.LoadUint64(pm.CountWon))
+			fmt.Println("games lose:", atomic.LoadUint64(pm.CountLose))
+			fmt.Println("games draw:", atomic.LoadUint64(pm.CountDraw))
+			time.Sleep(time.Second)
 		}
 	}()
 
-	for k, v := range pm.winMap[key] {
-		str := fmt.Sprintf("%sr{%s};\n", k, v.String())
-		if _, err = file.WriteString(str); err != nil {
-			return fmt.Errorf("failed to write to file: %v", err)
-		}
-	}
+	wg.Wait()
 
-	fmt.Println("predictor saved to", path)
+	fmt.Println()
+	fmt.Println("games played:", pm.Count)
+	fmt.Println("games won:", pm.CountWon)
+	fmt.Println("games lose:", pm.CountLose)
+	fmt.Println("games draw:", pm.CountDraw)
+	fmt.Println()
+	fmt.Println("done")
+
+	if err := st.Close(); err != nil {
+		return err
+	}
 
 	return nil
 }

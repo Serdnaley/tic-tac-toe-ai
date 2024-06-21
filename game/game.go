@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"tictactoe/util"
 )
 
 var WinPositionsCache = map[string][][][2]int{}
@@ -30,14 +31,15 @@ type Game struct {
 }
 
 func NewGame(w, h, l int) (*Game, error) {
-	g := &Game{}
-	g.PlayerTurn = PlayerX
-	g.PlayerWon = PlayerNone
-	g.WinLength = l
-	g.BoardWidth = w
-	g.BoardHeight = h
-	g.BoardHistory = make([]Step, 0)
-	g.Board = make([][]Player, w)
+	g := &Game{
+		PlayerTurn:   PlayerX,
+		PlayerWon:    PlayerNone,
+		WinLength:    l,
+		BoardWidth:   w,
+		BoardHeight:  h,
+		BoardHistory: make([]Step, 0),
+		Board:        make([][]Player, w),
+	}
 
 	for i := range g.Board {
 		g.Board[i] = make([]Player, h)
@@ -98,7 +100,7 @@ func (g *Game) refreshWinPositions() error {
 		return errors.New(fmt.Sprintf("Board %dx%d is too small for winning length %d", g.BoardWidth, g.BoardHeight, g.WinLength))
 	}
 
-	cacheKey := fmt.Sprintf("%d-%d-%d", g.BoardWidth, g.BoardHeight, g.WinLength)
+	cacheKey := util.GetMapKey(g.BoardWidth, g.BoardHeight, g.WinLength)
 
 	if WinPositionsCache[cacheKey] != nil {
 		g.WinPositions = WinPositionsCache[cacheKey]
