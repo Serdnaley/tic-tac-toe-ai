@@ -18,7 +18,7 @@ type ResultStorage struct {
 }
 
 func NewResultStorage(w, h, l int) (*ResultStorage, error) {
-	count := int((util.Factorial(w) + util.Factorial(h) + util.Factorial(l)) / 3)
+	count := int(util.Factorial(((w*l)+(h*l))/2)/100 + 1)
 
 	st := &ResultStorage{
 		Width:       w,
