@@ -3,6 +3,8 @@ package util
 import (
 	"encoding/binary"
 	"fmt"
+	"os"
+	"os/exec"
 )
 
 func Factorial(n int) uint64 {
@@ -66,4 +68,12 @@ func Murmur3Hash32(key []byte, seed uint32) uint32 {
 	h1 ^= h1 >> 16
 
 	return h1
+}
+
+func ClearConsole() {
+	cmd := exec.Command("clear")
+	cmd.Stdout = os.Stdout
+	if err := cmd.Run(); err != nil {
+		panic(err)
+	}
 }

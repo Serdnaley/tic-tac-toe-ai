@@ -13,8 +13,9 @@ type Predictor struct {
 	ResultStorage
 
 	CountEstimated  *uint64
+	CountElapsed    *uint64
 	CountInProgress *uint64
-	Count           *uint64
+	CountPlayed     *uint64
 	CountWon        *uint64
 	CountLose       *uint64
 	CountDraw       *uint64
@@ -24,8 +25,9 @@ func NewPredictor() *Predictor {
 	p := &Predictor{}
 
 	p.CountEstimated = new(uint64)
+	p.CountElapsed = new(uint64)
 	p.CountInProgress = new(uint64)
-	p.Count = new(uint64)
+	p.CountPlayed = new(uint64)
 	p.CountWon = new(uint64)
 	p.CountLose = new(uint64)
 	p.CountDraw = new(uint64)
@@ -35,9 +37,6 @@ func NewPredictor() *Predictor {
 
 func (pm *Predictor) play(g *game.Game, st *ResultStorage, wg *sync.WaitGroup) {
 	if g.PlayerWon != game.PlayerNone || len(g.BoardHistory) == g.BoardWidth*g.BoardHeight {
-		c := (g.BoardWidth * g.BoardHeight) - len(g.BoardHistory)
-		atomic.AddUint64(pm.CountEstimated, ^uint64(c))
-
 		pm.putGameResult(g, st)
 		return
 	}
@@ -77,7 +76,10 @@ func (pm *Predictor) play(g *game.Game, st *ResultStorage, wg *sync.WaitGroup) {
 }
 
 func (pm *Predictor) putGameResult(g *game.Game, st *ResultStorage) {
-	atomic.AddUint64(pm.Count, 1)
+	c := util.Factorial((g.BoardWidth * g.BoardHeight) - len(g.BoardHistory))
+	atomic.AddUint64(pm.CountElapsed, ^(c - 1))
+	atomic.AddUint64(pm.CountPlayed, 1)
+
 	switch g.PlayerWon {
 	case game.PlayerX:
 		atomic.AddUint64(pm.CountWon, 1)
@@ -109,6 +111,7 @@ func (pm *Predictor) BuildWinMap(w, h, l int) error {
 	wg := &sync.WaitGroup{}
 
 	atomic.AddUint64(pm.CountEstimated, util.Factorial(w*h))
+	atomic.AddUint64(pm.CountElapsed, util.Factorial(w*h))
 	atomic.AddUint64(pm.CountInProgress, 1)
 	wg.Add(1)
 	go func() {
@@ -121,14 +124,15 @@ func (pm *Predictor) BuildWinMap(w, h, l int) error {
 		i := 0
 		for {
 			i++
-			p := float64(atomic.LoadUint64(pm.Count)) / float64(atomic.LoadUint64(pm.CountEstimated)) * 100
-			fmt.Println()
+			p := 100 - float64(atomic.LoadUint64(pm.CountElapsed))/float64(atomic.LoadUint64(pm.CountEstimated))*100
+
+			util.ClearConsole()
 			fmt.Println("loop:", i)
 			fmt.Println("time elapsed:", time.Since(start))
 			fmt.Println("time estimated:", time.Duration(float64(time.Since(start))/p*100))
 			fmt.Println("games in progress:", atomic.LoadUint64(pm.CountInProgress))
 			fmt.Println("games estimated:", atomic.LoadUint64(pm.CountEstimated))
-			fmt.Println("games played:", atomic.LoadUint64(pm.Count))
+			fmt.Println("games played:", atomic.LoadUint64(pm.CountPlayed))
 			fmt.Println("games %:", p)
 			fmt.Println("games won:", atomic.LoadUint64(pm.CountWon))
 			fmt.Println("games lose:", atomic.LoadUint64(pm.CountLose))
