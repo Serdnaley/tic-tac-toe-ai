@@ -18,7 +18,7 @@ type ResultStorage struct {
 }
 
 func NewResultStorage(w, h, l int) (*ResultStorage, error) {
-	count := int(util.Factorial(((w*l)+(h*l))/2)/100 + 1)
+	count := int(util.Factorial((w/l)+(h/l))/100 + 1)
 
 	st := &ResultStorage{
 		Width:       w,
@@ -66,15 +66,8 @@ func (st *ResultStorage) Write(g *game.Game) {
 		panic(fmt.Errorf("chunk is not found: %d", st.GetGameChunk(g)))
 	}
 
-	str := fmt.Sprintf("p{%s};", g.BoardHistory[0].Player.String())
-	for _, step := range g.BoardHistory {
-		str += fmt.Sprintf("m{%d,%d};", step.X, step.Y)
-	}
-	str += fmt.Sprintf("r{%s};", g.PlayerWon.String())
-	str += "\n"
-
 	file := st.Chunks[st.GetGameChunk(g)]
-	if _, err := file.WriteString(str); err != nil {
+	if _, err := file.WriteString(g.String() + "\n"); err != nil {
 		panic(err)
 	}
 }

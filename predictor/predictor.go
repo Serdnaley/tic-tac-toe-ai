@@ -36,47 +36,41 @@ func NewPredictor() *Predictor {
 }
 
 func (pm *Predictor) play(g *game.Game, st *ResultStorage, wg *sync.WaitGroup) {
-	if g.PlayerWon != game.PlayerNone || len(g.BoardHistory) == g.BoardWidth*g.BoardHeight {
+	if g.IsOver() {
 		pm.putGameResult(g, st)
 		return
 	}
 
 	count := uint16(0)
 	wg2 := &sync.WaitGroup{}
-	for x := range g.Board {
-		for y := range g.Board[x] {
-			if g.Board[x][y] != game.PlayerNone {
-				continue
-			}
+	for i := range g.Board {
+		if g.Board[i] != game.PlayerNone {
+			continue
+		}
 
-			atomic.AddUint64(pm.CountInProgress, 1)
-			wg.Add(1)
-			wg2.Add(1)
-			count++
-			go func(x, y int) {
-				newGame := g.Copy()
-				newGame.MakeMove(x, y)
+		atomic.AddUint64(pm.CountInProgress, 1)
+		wg.Add(1)
+		wg2.Add(1)
+		count++
+		go func(i int) {
+			newGame := g.Copy()
+			newGame.MakeMoveByIndex(i)
 
-				if len(newGame.BoardHistory) > g.WinLength*2-1 {
-					newGame.CheckWin()
-				}
+			pm.play(newGame, st, wg)
+			atomic.AddUint64(pm.CountInProgress, ^uint64(0))
+			wg.Done()
+			wg2.Done()
+			count--
+		}(i)
 
-				pm.play(newGame, st, wg)
-				atomic.AddUint64(pm.CountInProgress, ^uint64(0))
-				wg.Done()
-				wg2.Done()
-				count--
-			}(x, y)
-
-			if count >= uint16(len(g.BoardHistory)/3+1) {
-				wg2.Wait()
-			}
+		if count >= uint16(g.StepsCount+1) {
+			wg2.Wait()
 		}
 	}
 }
 
 func (pm *Predictor) putGameResult(g *game.Game, st *ResultStorage) {
-	c := util.Factorial((g.BoardWidth * g.BoardHeight) - len(g.BoardHistory))
+	c := util.Factorial((g.BoardWidth * g.BoardHeight) - g.StepsCount)
 	atomic.AddUint64(pm.CountElapsed, ^(c - 1))
 	atomic.AddUint64(pm.CountPlayed, 1)
 
