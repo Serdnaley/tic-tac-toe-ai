@@ -93,6 +93,32 @@ func (g *Game) CheckWin() {
 	}
 }
 
+func (g *Game) ScaleBoard(w, h, l int) error {
+	newGame, err := NewGame(w, h, l)
+	if err != nil {
+		return err
+	}
+
+	offsetX := (w - g.BoardWidth) / 2
+	offsetY := (h - g.BoardHeight) / 2
+
+	for x := 0; x < g.BoardWidth; x++ {
+		for y := 0; y < g.BoardHeight; y++ {
+			newX := x + offsetX
+			newY := y + offsetY
+			newGame.Board[newX+newY*w] = g.Board[x+y*g.BoardWidth]
+		}
+	}
+
+	newGame.PlayerTurn = g.PlayerTurn
+	newGame.StepsCount = g.StepsCount
+	newGame.CheckWin()
+
+	*g = *newGame
+
+	return nil
+}
+
 func (g *Game) IsFulfilled() bool {
 	return g.StepsCount == g.BoardWidth*g.BoardHeight
 }
@@ -111,6 +137,38 @@ func FromString(str string) (*Game, error) {
 	_, err := fmt.Sscanf(str, "%c %s", &g.PlayerWon, &g.Board)
 	if err != nil {
 		return nil, err
+	}
+
+	countX, countO := 0, 0
+	for _, p := range g.Board {
+		switch p {
+		case PlayerX:
+			countX++
+		case PlayerO:
+			countO++
+		}
+	}
+
+	if countX < countO {
+		g.PlayerTurn = PlayerX
+	} else {
+		g.PlayerTurn = PlayerO
+	}
+
+	g.StepsCount = countX + countO
+
+	for s := range MapSizes {
+		if s*s == len(g.Board) {
+			g.BoardWidth = s
+			g.BoardHeight = s
+			break
+		}
+	}
+
+	if g.BoardWidth == 3 {
+		g.WinLength = 3
+	} else {
+		g.WinLength = g.BoardWidth - 1
 	}
 
 	return g, nil

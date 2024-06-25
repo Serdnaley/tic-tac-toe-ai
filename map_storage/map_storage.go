@@ -1,4 +1,4 @@
-package map_builder
+package map_storage
 
 import (
 	"fmt"
@@ -10,7 +10,7 @@ import (
 )
 
 func Write(g *game.Game) error {
-	path := GetChunkFilePath(g)
+	path := getChunkFilePath(g)
 	var file *os.File
 	var err error
 
@@ -41,21 +41,30 @@ func Write(g *game.Game) error {
 	return nil
 }
 
-func GetChunkFilePath(g *game.Game) string {
-	path := ""
-
-	for i := 0; i < len(g.Board)-6; i += 3 {
-		path += string(g.Board[i:i+3]) + "/"
-	}
-
-	return filepath.Join(
-		GetChunksDir(),
-		util.GetMapKey(g.BoardWidth, g.BoardHeight, g.WinLength),
-		path,
+func GetChunkFiles(g *game.Game) ([]string, error) {
+	return filepath.Glob(
+		filepath.Join(
+			getChunksDir(),
+			util.GetMapKey(g.BoardWidth, g.BoardHeight, g.WinLength),
+			"*",
+		),
 	)
 }
 
-func GetChunksDir() string {
+func IsMapExist(w, h, l int) bool {
+	_, err := os.Stat(getChunksDir() + "/" + util.GetMapKey(w, h, l))
+	return !os.IsNotExist(err)
+}
+
+func getChunkFilePath(g *game.Game) string {
+	return filepath.Join(
+		getChunksDir(),
+		util.GetMapKey(g.BoardWidth, g.BoardHeight, g.WinLength),
+		string(g.Board[0:len(g.Board)-6]),
+	)
+}
+
+func getChunksDir() string {
 	_, currentFilePath, _, ok := runtime.Caller(0)
 	if !ok {
 		panic("failed to get current file path")
