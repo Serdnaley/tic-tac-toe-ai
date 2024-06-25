@@ -2,6 +2,7 @@ package game
 
 import (
 	"fmt"
+	"tictactoe/util"
 )
 
 type Game struct {
@@ -49,6 +50,10 @@ func (g *Game) Copy() *Game {
 	}
 
 	return newGame
+}
+
+func (g *Game) GetMapKey() string {
+	return util.GetMapKey(g.BoardWidth, g.BoardHeight, g.WinLength)
 }
 
 func (g *Game) MakeMoveByIndex(i int) {

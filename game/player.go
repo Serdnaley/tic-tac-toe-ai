@@ -7,7 +7,7 @@ import (
 type Player byte
 
 const (
-	PlayerNone Player = '-'
+	PlayerNone Player = '_'
 	PlayerX           = 'X'
 	PlayerO           = 'O'
 )
