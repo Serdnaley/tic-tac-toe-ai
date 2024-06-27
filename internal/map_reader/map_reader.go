@@ -2,12 +2,14 @@ package map_reader
 
 import (
 	"bufio"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
 	"sync"
-	"tictactoe/game"
-	"tictactoe/map_storage"
+	"tictactoe/internal/game"
+	"tictactoe/internal/map_storage"
+	"tictactoe/internal/util"
 )
 
 type Task struct {
@@ -61,7 +63,7 @@ func (mr *MapReader) checkFileWorker() {
 				continue
 			}
 
-			if compareGamePattern(task.game.String()[2:], gameStr) {
+			if util.CompareGamePattern(task.game.String()[2:], gameStr) {
 				switch winner {
 				case game.PlayerX:
 					res.Win++
@@ -99,7 +101,7 @@ func (mr *MapReader) GetGameStats(g *game.Game) (Result, error) {
 	for _, path := range paths {
 		_, fileName := filepath.Split(path)
 
-		if !compareGamePattern(pattern, fileName) {
+		if !util.CompareGamePattern(pattern, fileName) {
 			continue
 		}
 
@@ -136,20 +138,68 @@ func (mr *MapReader) GetGameStats(g *game.Game) (Result, error) {
 	return res, nil
 }
 
-func compareGamePattern(pattern, target string) bool {
-	if len(pattern) != len(target) {
-		return false
-	}
+func (mr *MapReader) GetNextMove(g *game.Game) (int, int, error) {
+	wg := &sync.WaitGroup{}
+	results := map[int]Result{}
 
-	for i, p := range pattern {
-		if p == int32(game.PlayerNone) {
+	for i, p := range g.Board {
+		if p != game.PlayerNone {
 			continue
 		}
 
-		if target[i] != byte(p) {
-			return false
+		wg.Add(1)
+		go func(i int) {
+			defer wg.Done()
+
+			gCopy := g.Copy()
+			gCopy.Board[i] = game.PlayerX
+
+			res, err := mr.GetGameStats(gCopy)
+			if err != nil {
+				fmt.Println("failed to get game stats", err)
+				return
+			}
+
+			results[i] = res
+		}(i)
+	}
+
+	wg.Wait()
+
+	haveResults := false
+	var bestMove int
+	var bestResult Result
+
+	for i, res := range results {
+		haveResults = true
+		if (bestResult == Result{}) {
+			bestMove = i
+			bestResult = res
+			continue
+		}
+		if res.Win > bestResult.Win {
+			bestMove = i
+			bestResult = res
+			continue
+		}
+		if res.Win == bestResult.Win && res.Lose < bestResult.Lose {
+			bestMove = i
+			bestResult = res
+			continue
+		}
+		if res.Win == bestResult.Win && res.Lose == bestResult.Lose && res.Draw > bestResult.Draw {
+			bestMove = i
+			bestResult = res
+			continue
 		}
 	}
 
-	return true
+	if !haveResults {
+		return 0, 0, errors.New("no results")
+	}
+
+	x := bestMove % g.Size
+	y := bestMove / g.Size
+
+	return x, y, nil
 }

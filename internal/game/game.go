@@ -2,31 +2,29 @@ package game
 
 import (
 	"fmt"
-	"tictactoe/util"
+	"tictactoe/internal/util"
 )
 
 type Game struct {
-	PlayerTurn  Player
-	PlayerWon   Player
-	StepsCount  int
-	Board       []Player
-	BoardWidth  int
-	BoardHeight int
-	WinLength   int
+	PlayerTurn Player
+	PlayerWon  Player
+	StepsCount int
+	Board      []Player
+	Size       int
+	WinLength  int
 }
 
-func NewGame(w, h, l int) (*Game, error) {
+func NewGame(s, l int) (*Game, error) {
 	g := &Game{
-		PlayerTurn:  PlayerX,
-		PlayerWon:   PlayerNone,
-		StepsCount:  0,
-		Board:       make([]Player, w*h),
-		BoardWidth:  w,
-		BoardHeight: h,
-		WinLength:   l,
+		PlayerTurn: PlayerX,
+		PlayerWon:  PlayerNone,
+		StepsCount: 0,
+		Board:      make([]Player, s*s),
+		Size:       s,
+		WinLength:  l,
 	}
 
-	for i := 0; i < w*h; i++ {
+	for i := 0; i < s*s; i++ {
 		g.Board[i] = PlayerNone
 	}
 
@@ -39,8 +37,7 @@ func (g *Game) Copy() *Game {
 	newGame.PlayerTurn = g.PlayerTurn
 	newGame.PlayerWon = g.PlayerWon
 	newGame.StepsCount = g.StepsCount
-	newGame.BoardWidth = g.BoardWidth
-	newGame.BoardHeight = g.BoardHeight
+	newGame.Size = g.Size
 	newGame.WinLength = g.WinLength
 
 	newGame.Board = make([]Player, len(g.Board))
@@ -53,7 +50,7 @@ func (g *Game) Copy() *Game {
 }
 
 func (g *Game) GetMapKey() string {
-	return util.GetMapKey(g.BoardWidth, g.BoardHeight, g.WinLength)
+	return util.GetMapKey(g.Size, g.WinLength)
 }
 
 func (g *Game) MakeMoveByIndex(i int) {
@@ -64,13 +61,13 @@ func (g *Game) MakeMoveByIndex(i int) {
 }
 
 func (g *Game) MakeMoveByCoordinates(x, y int) {
-	g.MakeMoveByIndex(x + y*g.BoardWidth)
+	g.MakeMoveByIndex(x + y*g.Size)
 }
 
 func (g *Game) CheckWin() {
-	var w, h, l = g.BoardWidth, g.BoardHeight, g.WinLength
+	var s, l = g.Size, g.WinLength
 
-	for _, positions := range GetWinPositions(w, h, l) {
+	for _, positions := range GetWinPositions(s, l) {
 		var player = g.Board[positions[0]]
 		var count int
 
@@ -93,20 +90,19 @@ func (g *Game) CheckWin() {
 	}
 }
 
-func (g *Game) ScaleBoard(w, h, l int) error {
-	newGame, err := NewGame(w, h, l)
+func (g *Game) ScaleBoard(s, l int) error {
+	newGame, err := NewGame(s, l)
 	if err != nil {
 		return err
 	}
 
-	offsetX := (w - g.BoardWidth) / 2
-	offsetY := (h - g.BoardHeight) / 2
+	offset := (s - g.Size) / 2
 
-	for x := 0; x < g.BoardWidth; x++ {
-		for y := 0; y < g.BoardHeight; y++ {
-			newX := x + offsetX
-			newY := y + offsetY
-			newGame.Board[newX+newY*w] = g.Board[x+y*g.BoardWidth]
+	for x := 0; x < g.Size; x++ {
+		for y := 0; y < g.Size; y++ {
+			newX := x + offset
+			newY := y + offset
+			newGame.Board[newX+newY*s] = g.Board[x+y*g.Size]
 		}
 	}
 
@@ -120,7 +116,7 @@ func (g *Game) ScaleBoard(w, h, l int) error {
 }
 
 func (g *Game) IsFulfilled() bool {
-	return g.StepsCount == g.BoardWidth*g.BoardHeight
+	return g.StepsCount == g.Size*g.Size
 }
 
 func (g *Game) IsOver() bool {
@@ -159,16 +155,15 @@ func FromString(str string) (*Game, error) {
 
 	for s := range MapSizes {
 		if s*s == len(g.Board) {
-			g.BoardWidth = s
-			g.BoardHeight = s
+			g.Size = s
 			break
 		}
 	}
 
-	if g.BoardWidth == 3 {
-		g.WinLength = 3
+	if g.Size <= 4 {
+		g.WinLength = g.Size
 	} else {
-		g.WinLength = g.BoardWidth - 1
+		g.WinLength = g.Size - 1
 	}
 
 	return g, nil

@@ -4,10 +4,10 @@ import (
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"net/http"
-	"tictactoe/game"
-	"tictactoe/map_builder"
-	"tictactoe/map_reader"
-	"tictactoe/util"
+	"tictactoe/internal/game"
+	"tictactoe/internal/map_builder"
+	"tictactoe/internal/map_reader"
+	"tictactoe/internal/map_storage"
 )
 
 type Server struct {
@@ -23,29 +23,45 @@ func NewServer() *Server {
 		mr: map_reader.NewMapReader(),
 	}
 
-	s.r.GET("/health", func(c *gin.Context) {
+	s.r.Static("/static", "./static")
+
+	s.r.GET("/api/health", func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{"status": "ok"})
 	})
 
-	s.r.GET("/maps/:map/status", func(c *gin.Context) {
-		mapKey := c.Params.ByName("map")
-
-		w, h, l, err := util.ParseMapKey(mapKey)
-		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-			return
-		}
-
-		c.JSON(http.StatusOK, gin.H{"status": "ok", "data": s.mb.GetMapStatus(w, h, l)})
-	})
-
-	s.r.POST("/maps/build", func(c *gin.Context) {
+	s.r.GET("/api/maps/status", func(c *gin.Context) {
 		gameStr := c.Query("game")
 
 		g, err := game.FromString(gameStr)
 		if err != nil {
 			fmt.Println("error parsing game str", err.Error())
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
+
+		progress, _ := map_storage.GetProgress(g)
+
+		c.JSON(http.StatusOK, gin.H{
+			"status": "ok",
+			"data": gin.H{
+				"progress": progress,
+			},
+		})
+	})
+
+	s.r.POST("/api/maps/build", func(c *gin.Context) {
+		gameStr := c.Query("game")
+
+		g, err := game.FromString(gameStr)
+		if err != nil {
+			fmt.Println("error parsing game str", err.Error())
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
+
+		_, started := map_storage.GetProgress(g)
+		if started {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "map is already being built"})
 			return
 		}
 
@@ -58,12 +74,18 @@ func NewServer() *Server {
 		c.JSON(http.StatusOK, gin.H{"status": "ok"})
 	})
 
-	s.r.GET("/chances", func(c *gin.Context) {
+	s.r.GET("/api/chances", func(c *gin.Context) {
 		gameStr := c.Query("game")
 
 		g, err := game.FromString(gameStr)
 		if err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
+
+		progress, started := map_storage.GetProgress(g)
+		if !started || progress != 100 {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "map is not ready"})
 			return
 		}
 
@@ -73,11 +95,30 @@ func NewServer() *Server {
 			return
 		}
 
-		fmt.Println(stats)
-
 		c.JSON(http.StatusOK, gin.H{
 			"status": "ok",
 			"data":   stats,
+		})
+	})
+
+	s.r.GET("/api/next-move", func(c *gin.Context) {
+		gameStr := c.Query("game")
+
+		g, err := game.FromString(gameStr)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
+
+		x, y, err := s.mr.GetNextMove(g)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+
+		c.JSON(http.StatusOK, gin.H{
+			"status": "ok",
+			"data":   gin.H{"x": x, "y": y},
 		})
 	})
 

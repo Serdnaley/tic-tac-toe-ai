@@ -4,12 +4,12 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
-	"tictactoe/game"
+	"tictactoe/internal/game"
 )
 
 func TestWrite(t *testing.T) {
 	// Create a new game
-	g, err := game.NewGame(3, 3, 3)
+	g, err := game.NewGame(3, 3)
 	if err != nil {
 		t.Fatalf("Failed to create a new game: %v", err)
 	}
@@ -32,7 +32,7 @@ func TestWrite(t *testing.T) {
 
 func TestGetChunkFiles(t *testing.T) {
 	// Create a new game
-	g, err := game.NewGame(3, 3, 3)
+	g, err := game.NewGame(3, 3)
 	if err != nil {
 		t.Fatalf("Failed to create a new game: %v", err)
 	}
@@ -60,7 +60,7 @@ func TestGetChunkFiles(t *testing.T) {
 
 func TestIsMapExist(t *testing.T) {
 	// Create a new game
-	g, err := game.NewGame(3, 3, 3)
+	g, err := game.NewGame(3, 3)
 	if err != nil {
 		t.Fatalf("Failed to create a new game: %v", err)
 	}
@@ -72,7 +72,7 @@ func TestIsMapExist(t *testing.T) {
 	}
 
 	// Check if the map exists
-	exists := IsMapExist(3, 3, 3)
+	exists := IsMapExist(3, 3)
 	if !exists {
 		t.Fatalf("Expected map to exist")
 	}

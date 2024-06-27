@@ -3,9 +3,8 @@ package map_builder
 import (
 	"fmt"
 	"sync"
-	"tictactoe/game"
-	"tictactoe/map_storage"
-	"tictactoe/util"
+	"tictactoe/internal/game"
+	"tictactoe/internal/map_storage"
 	"time"
 )
 
@@ -16,7 +15,6 @@ type Task struct {
 }
 
 type MapBuilder struct {
-	mapProgress     map[string]uint8
 	buildWinMapChan chan *game.Game
 	todoChan        chan Task
 	doneChan        chan Task
@@ -25,7 +23,6 @@ type MapBuilder struct {
 
 func NewMapBuilder() *MapBuilder {
 	mb := &MapBuilder{
-		mapProgress:     make(map[string]uint8),
 		buildWinMapChan: make(chan *game.Game, 1),
 		todoChan:        make(chan Task, 1_000_000_000),
 		doneChan:        make(chan Task),
@@ -43,7 +40,7 @@ func NewMapBuilder() *MapBuilder {
 }
 
 func (mb *MapBuilder) BuildWinMap(g *game.Game) error {
-	mb.mapProgress[util.GetMapKey(g.BoardWidth, g.BoardHeight, g.WinLength)] = 0
+	map_storage.SaveProgress(g, 0)
 
 	if g.IsOver() {
 		return fmt.Errorf("game is already over")
@@ -57,28 +54,6 @@ func (mb *MapBuilder) BuildWinMap(g *game.Game) error {
 type GetMapStatusResponse struct {
 	Status   string `json:"status"`
 	Progress uint8  `json:"progress"`
-}
-
-func (mb *MapBuilder) GetMapStatus(w, h, l int) GetMapStatusResponse {
-	status, ok := mb.mapProgress[util.GetMapKey(w, h, l)]
-	if ok {
-		return GetMapStatusResponse{
-			Status:   MapStatusBuilding.String(),
-			Progress: status,
-		}
-	}
-
-	if map_storage.IsMapExist(w, h, l) {
-		return GetMapStatusResponse{
-			Status:   MapStatusReady.String(),
-			Progress: 100,
-		}
-	}
-
-	return GetMapStatusResponse{
-		Status:   MapStatusNotStarted.String(),
-		Progress: 0,
-	}
 }
 
 func (mb *MapBuilder) buildWinMapWorker() {
@@ -101,7 +76,8 @@ func (mb *MapBuilder) buildWinMapWorker() {
 					break
 				}
 
-				mb.mapProgress[util.GetMapKey(g.BoardWidth, g.BoardHeight, g.WinLength)] = 0
+				mb.stats.Print(start)
+				map_storage.SaveProgress(g, uint8(mb.stats.GetPercent()))
 				time.Sleep(time.Second)
 			}
 		}()
@@ -109,7 +85,11 @@ func (mb *MapBuilder) buildWinMapWorker() {
 		wg.Wait()
 		stopped = true
 
+		mb.stats.Print(start)
 		fmt.Println("building win map finished in", time.Since(start), g)
+
+		map_storage.RemoveDuplicates(g)
+		map_storage.SaveProgress(g, 100)
 	}
 }
 

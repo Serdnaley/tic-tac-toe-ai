@@ -5,17 +5,17 @@ import (
 )
 
 func TestNewGame(t *testing.T) {
-	game, err := NewGame(3, 3, 3)
+	game, err := NewGame(3, 3)
 	if err != nil {
 		t.Fatalf("Failed to create a new game: %v", err)
 	}
 
-	if game.BoardWidth != 3 {
-		t.Fatalf("Expected board width to be 3, got %d", game.BoardWidth)
+	if game.Size != 3 {
+		t.Fatalf("Expected board width to be 3, got %d", game.Size)
 	}
 
-	if game.BoardHeight != 3 {
-		t.Fatalf("Expected board height to be 3, got %d", game.BoardHeight)
+	if game.Size != 3 {
+		t.Fatalf("Expected board height to be 3, got %d", game.Size)
 	}
 
 	if game.WinLength != 3 {
@@ -24,26 +24,26 @@ func TestNewGame(t *testing.T) {
 }
 
 func TestCopy(t *testing.T) {
-	game, _ := NewGame(3, 3, 3)
-	copy := game.Copy()
+	game, _ := NewGame(3, 3)
+	gCopy := game.Copy()
 
-	if copy.BoardWidth != game.BoardWidth || copy.BoardHeight != game.BoardHeight || copy.WinLength != game.WinLength {
+	if gCopy.Size != game.Size || gCopy.WinLength != game.WinLength {
 		t.Fatalf("Copy did not preserve game dimensions")
 	}
 
-	if copy.PlayerTurn != game.PlayerTurn || copy.PlayerWon != game.PlayerWon || copy.StepsCount != game.StepsCount {
+	if gCopy.PlayerTurn != game.PlayerTurn || gCopy.PlayerWon != game.PlayerWon || gCopy.StepsCount != game.StepsCount {
 		t.Fatalf("Copy did not preserve game state")
 	}
 
 	for i := range game.Board {
-		if copy.Board[i] != game.Board[i] {
+		if gCopy.Board[i] != game.Board[i] {
 			t.Fatalf("Copy did not preserve board state")
 		}
 	}
 }
 
 func TestGetMapKey(t *testing.T) {
-	game, _ := NewGame(3, 3, 3)
+	game, _ := NewGame(3, 3)
 	key := game.GetMapKey()
 
 	expectedKey := "3x3_3"
@@ -53,7 +53,7 @@ func TestGetMapKey(t *testing.T) {
 }
 
 func TestMakeMoveByIndex(t *testing.T) {
-	game, _ := NewGame(3, 3, 3)
+	game, _ := NewGame(3, 3)
 	game.MakeMoveByIndex(0)
 
 	if game.Board[0] != PlayerX {
@@ -66,7 +66,7 @@ func TestMakeMoveByIndex(t *testing.T) {
 }
 
 func TestMakeMoveByCoordinates(t *testing.T) {
-	game, _ := NewGame(3, 3, 3)
+	game, _ := NewGame(3, 3)
 	game.MakeMoveByCoordinates(1, 1)
 
 	if game.Board[4] != PlayerX {
@@ -79,7 +79,7 @@ func TestMakeMoveByCoordinates(t *testing.T) {
 }
 
 func TestCheckWin(t *testing.T) {
-	game, _ := NewGame(3, 3, 3)
+	game, _ := NewGame(3, 3)
 	game.MakeMoveByIndex(0)
 	game.MakeMoveByIndex(1)
 	game.MakeMoveByIndex(3)
@@ -92,23 +92,23 @@ func TestCheckWin(t *testing.T) {
 }
 
 func TestScaleBoard(t *testing.T) {
-	game, _ := NewGame(3, 3, 3)
+	game, _ := NewGame(3, 3)
 
 	for i := 0; i < 9; i++ {
 		game.MakeMoveByIndex(i)
 	}
 
-	err := game.ScaleBoard(5, 5, 4)
+	err := game.ScaleBoard(5, 4)
 	if err != nil {
 		t.Fatalf("Failed to scale the board: %v", err)
 	}
 
-	if game.BoardWidth != 5 {
-		t.Fatalf("Expected board width to be 5, got %d", game.BoardWidth)
+	if game.Size != 5 {
+		t.Fatalf("Expected board width to be 5, got %d", game.Size)
 	}
 
-	if game.BoardHeight != 5 {
-		t.Fatalf("Expected board height to be 5, got %d", game.BoardHeight)
+	if game.Size != 5 {
+		t.Fatalf("Expected board height to be 5, got %d", game.Size)
 	}
 
 	if game.WinLength != 4 {
@@ -131,7 +131,7 @@ func TestScaleBoard(t *testing.T) {
 }
 
 func TestIsFulfilled(t *testing.T) {
-	game, _ := NewGame(3, 3, 3)
+	game, _ := NewGame(3, 3)
 	for i := 0; i < 9; i++ {
 		game.MakeMoveByIndex(i)
 	}
@@ -142,7 +142,7 @@ func TestIsFulfilled(t *testing.T) {
 }
 
 func TestIsOver(t *testing.T) {
-	game, _ := NewGame(3, 3, 3)
+	game, _ := NewGame(3, 3)
 	game.MakeMoveByIndex(0)
 	game.MakeMoveByIndex(1)
 	game.MakeMoveByIndex(3)
@@ -155,7 +155,7 @@ func TestIsOver(t *testing.T) {
 }
 
 func TestString(t *testing.T) {
-	game, _ := NewGame(3, 3, 3)
+	game, _ := NewGame(3, 3)
 	game.MakeMoveByIndex(0)
 	game.MakeMoveByIndex(1)
 	game.MakeMoveByIndex(3)
@@ -174,12 +174,12 @@ func TestFromString(t *testing.T) {
 		t.Fatalf("Failed to create a new game from string: %v", err)
 	}
 
-	if game.BoardWidth != 3 {
-		t.Fatalf("Expected board width to be 3, got %d", game.BoardWidth)
+	if game.Size != 3 {
+		t.Fatalf("Expected board width to be 3, got %d", game.Size)
 	}
 
-	if game.BoardHeight != 3 {
-		t.Fatalf("Expected board height to be 3, got %d", game.BoardHeight)
+	if game.Size != 3 {
+		t.Fatalf("Expected board height to be 3, got %d", game.Size)
 	}
 
 	if game.WinLength != 3 {

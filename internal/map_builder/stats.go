@@ -3,8 +3,8 @@ package map_builder
 import (
 	"fmt"
 	"sync/atomic"
-	"tictactoe/game"
-	"tictactoe/util"
+	"tictactoe/internal/game"
+	"tictactoe/internal/util"
 	"time"
 )
 
@@ -47,12 +47,12 @@ func (s *Stats) GameFinished() {
 }
 
 func (s *Stats) BuildStarted(g *game.Game) {
-	atomic.AddUint64(&s.gamesCountEstimated, util.Factorial(g.BoardWidth*g.BoardHeight))
-	atomic.AddUint64(&s.gamesCountElapsed, util.Factorial(g.BoardWidth*g.BoardHeight))
+	atomic.AddUint64(&s.gamesCountEstimated, util.Factorial(g.Size*g.Size))
+	atomic.AddUint64(&s.gamesCountElapsed, util.Factorial(g.Size*g.Size))
 }
 
 func (s *Stats) GamePlayed(g *game.Game) {
-	c := util.Factorial((g.BoardWidth * g.BoardHeight) - g.StepsCount)
+	c := util.Factorial((g.Size * g.Size) - g.StepsCount)
 	atomic.AddUint64(&s.gamesCountElapsed, ^(c - 1))
 	atomic.AddUint64(&s.games.played, 1)
 

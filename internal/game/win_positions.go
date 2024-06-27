@@ -1,27 +1,27 @@
 package game
 
 import (
-	"tictactoe/util"
+	"tictactoe/internal/util"
 )
 
 var WinPositionsCache = map[string][][]int{}
 
-func GetWinPositions(w, h, l int) [][]int {
-	cacheKey := util.GetMapKey(w, h, l)
+func GetWinPositions(s, l int) [][]int {
+	cacheKey := util.GetMapKey(s, l)
 
 	if WinPositionsCache[cacheKey] != nil {
 		return WinPositionsCache[cacheKey]
 	}
 
-	res := make([][]int, 0, w*h)
+	res := make([][]int, 0, s*s)
 
 	// Vertical
-	for xOffset := 0; xOffset <= w-l; xOffset++ {
+	for xOffset := 0; xOffset <= s-l; xOffset++ {
 		for x := 0; x < l; x++ {
 			var column []int
 
 			for y := 0; y < l; y++ {
-				column = append(column, (y*w)+(x+xOffset))
+				column = append(column, (y*s)+(x+xOffset))
 			}
 
 			res = append(res, column)
@@ -29,12 +29,12 @@ func GetWinPositions(w, h, l int) [][]int {
 	}
 
 	// Horizontal
-	for yOffset := 0; yOffset <= h-l; yOffset++ {
+	for yOffset := 0; yOffset <= s-l; yOffset++ {
 		for y := 0; y < l; y++ {
 			var row []int
 
 			for x := 0; x < l; x++ {
-				row = append(row, (y+yOffset)*w+x)
+				row = append(row, (y+yOffset)*s+x)
 			}
 
 			res = append(res, row)
@@ -42,14 +42,14 @@ func GetWinPositions(w, h, l int) [][]int {
 	}
 
 	// Diagonal
-	for xOffset := 0; xOffset <= w-l; xOffset++ {
-		for yOffset := 0; yOffset <= h-l; yOffset++ {
+	for xOffset := 0; xOffset <= s-l; xOffset++ {
+		for yOffset := 0; yOffset <= s-l; yOffset++ {
 			var diagonal1 []int
 			var diagonal2 []int
 
 			for i := 0; i < l; i++ {
-				diagonal1 = append(diagonal1, xOffset+i+(yOffset+i)*w)
-				diagonal2 = append(diagonal2, xOffset+l-1-i+(yOffset+i)*w)
+				diagonal1 = append(diagonal1, xOffset+i+(yOffset+i)*s)
+				diagonal2 = append(diagonal2, xOffset+l-1-i+(yOffset+i)*s)
 			}
 
 			res = append(res, diagonal1)

@@ -2,12 +2,12 @@ package game
 
 import (
 	"testing"
-	"tictactoe/util"
+	"tictactoe/internal/util"
 )
 
 func TestGetWinPositions(t *testing.T) {
 	// Test vertical win positions
-	verticalWinPositions := GetWinPositions(3, 3, 3)
+	verticalWinPositions := GetWinPositions(3, 3)
 	expectedVerticalWinPositions := [][]int{
 		{0, 3, 6}, {1, 4, 7}, {2, 5, 8},
 		{0, 1, 2}, {3, 4, 5}, {6, 7, 8},
@@ -19,7 +19,7 @@ func TestGetWinPositions(t *testing.T) {
 	}
 
 	// Test horizontal win positions
-	horizontalWinPositions := GetWinPositions(3, 3, 3)
+	horizontalWinPositions := GetWinPositions(3, 3)
 	expectedHorizontalWinPositions := [][]int{
 		{0, 3, 6}, {1, 4, 7}, {2, 5, 8},
 		{0, 1, 2}, {3, 4, 5}, {6, 7, 8},
@@ -31,7 +31,7 @@ func TestGetWinPositions(t *testing.T) {
 	}
 
 	// Test diagonal win positions
-	diagonalWinPositions := GetWinPositions(3, 3, 3)
+	diagonalWinPositions := GetWinPositions(3, 3)
 	expectedDiagonalWinPositions := [][]int{
 		{0, 3, 6}, {1, 4, 7}, {2, 5, 8},
 		{0, 1, 2}, {3, 4, 5}, {6, 7, 8},
@@ -43,7 +43,7 @@ func TestGetWinPositions(t *testing.T) {
 	}
 
 	// Test cache functionality
-	cacheKey := util.GetMapKey(3, 3, 3)
+	cacheKey := util.GetMapKey(3, 3)
 	if WinPositionsCache[cacheKey] == nil {
 		t.Fatalf("Expected cache to contain key %s", cacheKey)
 	}

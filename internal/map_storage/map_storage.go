@@ -5,8 +5,8 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
-	"tictactoe/game"
-	"tictactoe/util"
+	"tictactoe/internal/game"
+	"tictactoe/internal/util"
 )
 
 func Write(g *game.Game) error {
@@ -45,21 +45,21 @@ func GetChunkFiles(g *game.Game) ([]string, error) {
 	return filepath.Glob(
 		filepath.Join(
 			getChunksDir(),
-			util.GetMapKey(g.BoardWidth, g.BoardHeight, g.WinLength),
+			util.GetMapKey(g.Size, g.WinLength),
 			"*",
 		),
 	)
 }
 
-func IsMapExist(w, h, l int) bool {
-	_, err := os.Stat(getChunksDir() + "/" + util.GetMapKey(w, h, l))
+func IsMapExist(s, l int) bool {
+	_, err := os.Stat(getChunksDir() + "/" + util.GetMapKey(s, l))
 	return !os.IsNotExist(err)
 }
 
 func getChunkFilePath(g *game.Game) string {
 	return filepath.Join(
 		getChunksDir(),
-		util.GetMapKey(g.BoardWidth, g.BoardHeight, g.WinLength),
+		util.GetMapKey(g.Size, g.WinLength),
 		string(g.Board[0:len(g.Board)-6]),
 	)
 }
@@ -70,5 +70,5 @@ func getChunksDir() string {
 		panic("failed to get current file path")
 	}
 
-	return filepath.Join(filepath.Dir(currentFilePath), "../maps")
+	return filepath.Join(filepath.Dir(currentFilePath), "../../../tic-tac-toe-maps")
 }

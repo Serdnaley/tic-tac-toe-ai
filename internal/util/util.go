@@ -13,15 +13,18 @@ func Factorial(n int) uint64 {
 	return uint64(n) * Factorial(n-1)
 }
 
-func GetMapKey(w, h, l int) string {
-	return fmt.Sprintf("%dx%d_%d", w, h, l)
+func GetMapKey(s, l int) string {
+	return fmt.Sprintf("%dx%d_%d", s, s, l)
 }
-func ParseMapKey(mapKey string) (int, int, int, error) {
+func ParseMapKey(mapKey string) (int, int, error) {
 	var w, h, l int
 	if _, err := fmt.Sscanf(mapKey, "%dx%d_%d", &w, &h, &l); err != nil {
-		return 0, 0, 0, err
+		return 0, 0, err
 	}
-	return w, h, l, nil
+	if w != h {
+		return 0, 0, fmt.Errorf("width and height must be equal")
+	}
+	return w, l, nil
 }
 
 func ClearConsole() {
@@ -47,5 +50,23 @@ func Equal2DSlices(a, b [][]int) bool {
 			}
 		}
 	}
+	return true
+}
+
+func CompareGamePattern(pattern, target string) bool {
+	if len(pattern) != len(target) {
+		return false
+	}
+
+	for i, p := range pattern {
+		if p == '_' {
+			continue
+		}
+
+		if target[i] != byte(p) {
+			return false
+		}
+	}
+
 	return true
 }
