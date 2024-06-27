@@ -172,11 +172,7 @@ func (mr *MapReader) GetNextMove(g *game.Game) (int, int, error) {
 
 	for i, res := range results {
 		haveResults = true
-		if (bestResult == Result{}) {
-			bestMove = i
-			bestResult = res
-			continue
-		}
+
 		if res.Win > bestResult.Win {
 			bestMove = i
 			bestResult = res

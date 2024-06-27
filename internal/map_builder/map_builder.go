@@ -24,12 +24,12 @@ type MapBuilder struct {
 func NewMapBuilder() *MapBuilder {
 	mb := &MapBuilder{
 		buildWinMapChan: make(chan *game.Game, 1),
-		todoChan:        make(chan Task, 1_000_000_000),
+		todoChan:        make(chan Task, 300),
 		doneChan:        make(chan Task),
 		stats:           NewStats(),
 	}
 
-	for i := 0; i < 2000; i++ {
+	for i := 0; i < 300; i++ {
 		go mb.todoWorker()
 	}
 
@@ -105,11 +105,15 @@ func (mb *MapBuilder) todoWorker() {
 			mb.saveResult(g)
 		} else {
 			task.wg.Add(1)
-			mb.doneChan <- Task{wg: task.wg, game: g, move: 0}
+			go func() {
+				mb.doneChan <- Task{wg: task.wg, game: g, move: 0}
+			}()
 		}
 
 		task.wg.Add(1)
-		mb.doneChan <- task
+		go func() {
+			mb.doneChan <- task
+		}()
 
 		mb.stats.GameFinished()
 		task.wg.Done()
