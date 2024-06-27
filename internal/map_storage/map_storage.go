@@ -70,5 +70,5 @@ func getChunksDir() string {
 		panic("failed to get current file path")
 	}
 
-	return filepath.Join(filepath.Dir(currentFilePath), "../../../tic-tac-toe-maps")
+	return filepath.Join(filepath.Dir(currentFilePath), "../../maps")
 }
